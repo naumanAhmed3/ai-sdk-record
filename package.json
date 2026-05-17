@@ -1,0 +1,60 @@
+{
+  "name": "ai-sdk-record",
+  "version": "0.1.0",
+  "description": "Record real Vercel AI SDK calls and replay them deterministically in tests. Cassette-based, framework-agnostic, zero runtime dependencies.",
+  "keywords": [
+    "ai",
+    "ai-sdk",
+    "vercel",
+    "testing",
+    "vcr",
+    "cassette",
+    "record",
+    "replay",
+    "language-model",
+    "streaming"
+  ],
+  "homepage": "https://github.com/naumanAhmed3/ai-sdk-record#readme",
+  "bugs": {
+    "url": "https://github.com/naumanAhmed3/ai-sdk-record/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/naumanAhmed3/ai-sdk-record.git"
+  },
+  "license": "MIT",
+  "author": "Nouman Misbah <naumanmisbah86@gmail.com>",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "peerDependencies": {
+    "@ai-sdk/provider": ">=2 <5"
+  },
+  "devDependencies": {
+    "@ai-sdk/provider": "^2.0.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
