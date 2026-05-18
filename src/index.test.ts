@@ -1,26 +1,27 @@
 import type {
-  LanguageModelV4,
-  LanguageModelV4CallOptions,
-  LanguageModelV4GenerateResult,
-  LanguageModelV4StreamResult,
+  LanguageModelV2,
+  LanguageModelV2CallOptions,
 } from '@ai-sdk/provider';
+
+type LanguageModelV2GenerateResult = Awaited<ReturnType<LanguageModelV2['doGenerate']>>;
+type LanguageModelV2StreamResult = Awaited<ReturnType<LanguageModelV2['doStream']>>;
 import { describe, expect, it, vi } from 'vitest';
 import { hashKey, inMemoryStorage, record, replay } from './index';
 
-const fakeCall: LanguageModelV4CallOptions = {
+const fakeCall: LanguageModelV2CallOptions = {
   prompt: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }],
-} as unknown as LanguageModelV4CallOptions;
+} as unknown as LanguageModelV2CallOptions;
 
-function generateResult(text: string): LanguageModelV4GenerateResult {
+function generateResult(text: string): LanguageModelV2GenerateResult {
   return {
     content: [{ type: 'text', text }],
     finishReason: 'stop',
     usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
     warnings: [],
-  } as unknown as LanguageModelV4GenerateResult;
+  } as unknown as LanguageModelV2GenerateResult;
 }
 
-function streamResult(chunks: unknown[]): LanguageModelV4StreamResult {
+function streamResult(chunks: unknown[]): LanguageModelV2StreamResult {
   const stream = new ReadableStream<unknown>({
     start(controller) {
       for (const c of chunks) controller.enqueue(c);
@@ -31,19 +32,19 @@ function streamResult(chunks: unknown[]): LanguageModelV4StreamResult {
     stream,
     request: {},
     response: { headers: {} },
-  } as unknown as LanguageModelV4StreamResult;
+  } as unknown as LanguageModelV2StreamResult;
 }
 
-function mockModel(overrides: Partial<LanguageModelV4>): LanguageModelV4 {
+function mockModel(overrides: Partial<LanguageModelV2>): LanguageModelV2 {
   return {
-    specificationVersion: 'v4',
+    specificationVersion: 'v2',
     provider: 'mock',
     modelId: 'mock',
     supportedUrls: {},
     doGenerate: vi.fn(async () => generateResult('mock')),
     doStream: vi.fn(async () => streamResult([])),
     ...overrides,
-  } as LanguageModelV4;
+  } as LanguageModelV2;
 }
 
 describe('hashKey', () => {

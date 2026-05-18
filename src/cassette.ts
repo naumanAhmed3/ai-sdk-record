@@ -4,7 +4,7 @@ import { dirname } from 'node:path';
 
 /**
  * One recorded interaction. Generate calls capture the resolved
- * `LanguageModelV4GenerateResult`; stream calls capture every chunk emitted
+ * `LanguageModelV2 generate result`; stream calls capture every chunk emitted
  * by the underlying stream so they can be replayed in order.
  */
 export interface CassetteEntry {
@@ -16,7 +16,7 @@ export interface CassetteEntry {
 
   /**
    * The serialised result. For `generate`, this is the full
-   * `LanguageModelV4GenerateResult`. For `stream`, this is `{ chunks, request, response }`
+   * `LanguageModelV2 generate result`. For `stream`, this is `{ chunks, request, response }`
    * with `chunks` being every event yielded by the underlying stream.
    */
   payload: unknown;

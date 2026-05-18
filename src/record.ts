@@ -1,9 +1,14 @@
 import type {
-  LanguageModelV4,
-  LanguageModelV4CallOptions,
-  LanguageModelV4GenerateResult,
-  LanguageModelV4StreamResult,
+  LanguageModelV2,
+  LanguageModelV2CallOptions,
+  LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
+
+// @ai-sdk/provider doesn't export the do{Generate,Stream} return types
+// directly. Reconstruct them via the LanguageModelV2 interface so the rest
+// of the file can use familiar names.
+type LanguageModelV2GenerateResult = Awaited<ReturnType<LanguageModelV2['doGenerate']>>;
+type LanguageModelV2StreamResult = Awaited<ReturnType<LanguageModelV2['doStream']>>;
 import {
   fileSystemStorage,
   hashKey,
@@ -38,7 +43,7 @@ export interface RecordOptions {
 }
 
 /**
- * Wrap a `LanguageModelV4` so that every `doGenerate` / `doStream` call is
+ * Wrap a `LanguageModelV2` so that every `doGenerate` / `doStream` call is
  * recorded into a cassette file. On subsequent runs the cached entry is
  * returned without hitting the real model — unless `forceRefresh` is set.
  *
@@ -56,9 +61,9 @@ export interface RecordOptions {
  * ```
  */
 export function record(
-  model: LanguageModelV4,
+  model: LanguageModelV2,
   options: RecordOptions,
-): LanguageModelV4 {
+): LanguageModelV2 {
   const storage = options.storage ?? fileSystemStorage;
   const cassettePath = options.cassette;
 
@@ -91,18 +96,18 @@ export function record(
   };
 
   return {
-    specificationVersion: 'v4',
+    specificationVersion: 'v2',
     provider: model.provider,
     modelId: model.modelId,
     supportedUrls: model.supportedUrls,
 
     async doGenerate(
-      callOptions: LanguageModelV4CallOptions,
-    ): Promise<LanguageModelV4GenerateResult> {
+      callOptions: LanguageModelV2CallOptions,
+    ): Promise<LanguageModelV2GenerateResult> {
       const key = hashKey({ kind: 'generate', call: callOptions });
       const cached = findEntry('generate', key);
       if (cached !== undefined) {
-        return cached.payload as LanguageModelV4GenerateResult;
+        return cached.payload as LanguageModelV2GenerateResult;
       }
 
       const result = await model.doGenerate(callOptions);
@@ -116,8 +121,8 @@ export function record(
     },
 
     async doStream(
-      callOptions: LanguageModelV4CallOptions,
-    ): Promise<LanguageModelV4StreamResult> {
+      callOptions: LanguageModelV2CallOptions,
+    ): Promise<LanguageModelV2StreamResult> {
       const key = hashKey({ kind: 'stream', call: callOptions });
       const cached = findEntry('stream', key);
       if (cached !== undefined) {
@@ -145,7 +150,7 @@ export function record(
 
       return {
         ...live,
-        stream: teed.passthrough,
+        stream: teed.passthrough as ReadableStream<LanguageModelV2StreamPart>,
       };
     },
   };
@@ -156,7 +161,7 @@ export function record(
  * to persist. Returns a passthrough stream plus a promise that resolves to
  * the recorded payload once the stream completes.
  */
-function teeAndCapture(live: LanguageModelV4StreamResult): {
+function teeAndCapture(live: LanguageModelV2StreamResult): {
   passthrough: ReadableStream<unknown>;
   collected: Promise<{ chunks: unknown[]; request?: unknown; response?: unknown }>;
 } {
@@ -210,14 +215,14 @@ function teeAndCapture(live: LanguageModelV4StreamResult): {
 
 /**
  * Re-emit chunks from a recorded stream payload. Returns a fresh
- * `LanguageModelV4StreamResult` whose `stream` enqueues all captured chunks
+ * `LanguageModelV2StreamResult` whose `stream` enqueues all captured chunks
  * synchronously and then closes.
  */
 export function replayChunks(recorded: {
   chunks: unknown[];
   request?: unknown;
   response?: unknown;
-}): LanguageModelV4StreamResult {
+}): LanguageModelV2StreamResult {
   const { chunks, request, response } = recorded;
   const stream = new ReadableStream<unknown>({
     start(controller) {
@@ -229,9 +234,9 @@ export function replayChunks(recorded: {
   });
   return {
     stream,
-    request: (request ?? {}) as LanguageModelV4StreamResult['request'],
+    request: (request ?? {}) as LanguageModelV2StreamResult['request'],
     response: (response ?? {
       headers: {},
-    }) as LanguageModelV4StreamResult['response'],
-  } as LanguageModelV4StreamResult;
+    }) as LanguageModelV2StreamResult['response'],
+  } as LanguageModelV2StreamResult;
 }

@@ -1,9 +1,12 @@
 import type {
-  LanguageModelV4,
-  LanguageModelV4CallOptions,
-  LanguageModelV4GenerateResult,
-  LanguageModelV4StreamResult,
+  LanguageModelV2,
+  LanguageModelV2CallOptions,
 } from '@ai-sdk/provider';
+
+// @ai-sdk/provider doesn't export the do{Generate,Stream} return types
+// directly. Reconstruct them via the LanguageModelV2 interface.
+type LanguageModelV2GenerateResult = Awaited<ReturnType<LanguageModelV2['doGenerate']>>;
+type LanguageModelV2StreamResult = Awaited<ReturnType<LanguageModelV2['doStream']>>;
 import {
   fileSystemStorage,
   hashKey,
@@ -53,11 +56,11 @@ export interface ReplayOptions {
    * Model to delegate to when `onMiss: 'passthrough'` and no cached entry is
    * found.
    */
-  fallback?: LanguageModelV4;
+  fallback?: LanguageModelV2;
 }
 
 /**
- * Return a `LanguageModelV4` that serves all calls from a pre-recorded
+ * Return a `LanguageModelV2` that serves all calls from a pre-recorded
  * cassette. Use this in tests / CI to drop the dependency on real model
  * providers entirely.
  *
@@ -70,7 +73,7 @@ export interface ReplayOptions {
  * await generateText({ model, prompt: 'What's the weather in Lahore?' });
  * ```
  */
-export function replay(options: ReplayOptions): LanguageModelV4 {
+export function replay(options: ReplayOptions): LanguageModelV2 {
   const storage = options.storage ?? fileSystemStorage;
   const cassettePath = options.cassette;
   const onMiss = options.onMiss ?? 'throw';
@@ -90,18 +93,18 @@ export function replay(options: ReplayOptions): LanguageModelV4 {
     );
 
   return {
-    specificationVersion: 'v4',
+    specificationVersion: 'v2',
     provider: options.provider ?? 'ai-sdk-record/replay',
     modelId: options.modelId ?? 'replay',
     supportedUrls: {},
 
     async doGenerate(
-      callOptions: LanguageModelV4CallOptions,
-    ): Promise<LanguageModelV4GenerateResult> {
+      callOptions: LanguageModelV2CallOptions,
+    ): Promise<LanguageModelV2GenerateResult> {
       const key = hashKey({ kind: 'generate', call: callOptions });
       const entry = findEntry('generate', key);
       if (entry !== undefined) {
-        return entry.payload as LanguageModelV4GenerateResult;
+        return entry.payload as LanguageModelV2GenerateResult;
       }
       if (onMiss === 'passthrough' && options.fallback !== undefined) {
         return options.fallback.doGenerate(callOptions);
@@ -110,8 +113,8 @@ export function replay(options: ReplayOptions): LanguageModelV4 {
     },
 
     async doStream(
-      callOptions: LanguageModelV4CallOptions,
-    ): Promise<LanguageModelV4StreamResult> {
+      callOptions: LanguageModelV2CallOptions,
+    ): Promise<LanguageModelV2StreamResult> {
       const key = hashKey({ kind: 'stream', call: callOptions });
       const entry = findEntry('stream', key);
       if (entry !== undefined) {
