@@ -15,6 +15,7 @@ import {
   type CassetteEntry,
   type CassetteFile,
   type CassetteStorage,
+  redactSensitiveMetadata,
 } from './cassette';
 
 /**
@@ -40,6 +41,9 @@ export interface RecordOptions {
    * runs without burning tokens.
    */
   forceRefresh?: boolean;
+
+  /** Optional final redaction hook applied before a payload is persisted. */
+  redact?: (payload: unknown) => unknown;
 }
 
 /**
@@ -66,6 +70,7 @@ export function record(
 ): LanguageModelV2 {
   const storage = options.storage ?? fileSystemStorage;
   const cassettePath = options.cassette;
+  const redact = options.redact ?? redactSensitiveMetadata;
 
   // Lazy: load the cassette only when needed. We re-read on every call so
   // multiple tests sharing the same cassette see each other's writes within
@@ -114,7 +119,7 @@ export function record(
       writeEntry({
         key,
         kind: 'generate',
-        payload: result,
+        payload: redact(result),
         recordedAt: Date.now(),
       });
       return result;
@@ -143,7 +148,7 @@ export function record(
         writeEntry({
           key,
           kind: 'stream',
-          payload,
+          payload: redact(payload),
           recordedAt: Date.now(),
         }),
       );
