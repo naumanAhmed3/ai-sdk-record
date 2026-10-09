@@ -46,7 +46,7 @@
     "prepublishOnly": "npm run build && npm test"
   },
   "peerDependencies": {
-    "@ai-sdk/provider": ">=2 <5"
+    "@ai-sdk/provider": "^2.0.0"
   },
   "devDependencies": {
     "@ai-sdk/provider": "^2.0.0",
