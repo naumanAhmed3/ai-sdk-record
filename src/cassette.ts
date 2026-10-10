@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash, randomUUID } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 /**
@@ -70,9 +70,27 @@ export const fileSystemStorage: CassetteStorage = {
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     }
-    writeFileSync(path, JSON.stringify(file, null, 2));
+    const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`;
+    writeFileSync(temporary, JSON.stringify(file, null, 2), { mode: 0o600 });
+    renameSync(temporary, path);
   },
 };
+
+const SENSITIVE_KEYS = /^(authorization|cookie|set-cookie|api[-_]?key|token|secret|password)$/i;
+
+/** Redact common credential-bearing metadata before persistence. */
+export function redactSensitiveMetadata(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactSensitiveMetadata);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, child]) => [
+        key,
+        SENSITIVE_KEYS.test(key) ? '[REDACTED]' : redactSensitiveMetadata(child),
+      ]),
+    );
+  }
+  return value;
+}
 
 /**
  * Stable cassette key from any JSON-serialisable input. We sort keys before

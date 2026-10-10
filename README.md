@@ -1,6 +1,6 @@
 # ai-sdk-record
 
-Record real [Vercel AI SDK](https://github.com/vercel/ai) calls into a cassette file, then replay them deterministically in tests. Inspired by VCR / nock — but for `LanguageModelV4`.
+Record real [Vercel AI SDK](https://github.com/vercel/ai) calls into a cassette file, then replay them deterministically in tests. Inspired by VCR / nock — for the `LanguageModelV2` provider interface.
 
 ```bash
 npm i -D ai-sdk-record
@@ -92,10 +92,11 @@ Streaming replay re-emits every recorded chunk in order, so tool-call deltas, re
 ### `record(model, options)`
 
 ```ts
-record(model: LanguageModelV4, options: {
+record(model: LanguageModelV2, options: {
   cassette: string;
   storage?: CassetteStorage;
   forceRefresh?: boolean;
+  redact?: (payload: unknown) => unknown;
 }): LanguageModelV4;
 ```
 
@@ -143,7 +144,11 @@ Cassette playback re-emits every captured chunk synchronously on consumption. Er
 
 ## Status
 
-Pre-1.0. The cassette format is versioned and will be migrated rather than broken. Issues and feedback very welcome.
+Pre-1.0. Cassettes can contain prompts and model output; keep them out of public
+repositories when that content is confidential. Common credential metadata is
+redacted by default and `redact` can enforce project-specific rules. Filesystem
+writes use an atomic replace, but one cassette should still have a single writer
+at a time. The cassette format is versioned and will be migrated rather than broken.
 
 ## License
 
